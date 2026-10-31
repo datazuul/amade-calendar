@@ -60,5 +60,11 @@ public interface MainView {
     /** The Popup reminder: a non-modal message. */
     void popup(String title, String text);
 
+    /**
+     * The Popup reminder as a desktop notification with <i>Snooze 5 min</i> and a click that shows the day;
+     * {@code snooze} and {@code open} are called on the EDT.
+     */
+    void remind(String summary, String body, Runnable snooze, Runnable open);
+
     void dispose();
 }

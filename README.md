@@ -67,7 +67,7 @@ Editor and the To Do Editor of the original, stored as a plain iCalendar file.
 - **Find** (*View → Find…*): a text, searched six months back and ahead by default, *Search all* for
   the whole calendar, *Show Appointment* opens a match in Day view with the editor.
 - **Reminders** fire while the Calendar runs: *Beep* sounds, *Flash* draws attention to the window,
-  *Popup* shows a message, *Mail* opens the mailer (amade-mail, or whatever handles `mailto:`) with a
+  *Popup* shows a desktop notification with *Snooze 5 min* (a click shows the day), *Mail* opens the mailer (amade-mail, or whatever handles `mailto:`) with a
   message to the *Mail To* address that holds the appointment, ready to send. The *Mail To* field
   completes addresses from the address books of [amade-contacts](https://github.com/amadeos-eu/amade-contacts).
 - **Birthdays** from the address books of amade-contacts appear in every view as day notes,

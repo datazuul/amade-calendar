@@ -69,6 +69,8 @@ public final class MainPresenter implements ViewActions {
     private CalendarView currentView = CalendarView.MONTH;
     private LocalDate selected = LocalDate.now();
     private ReminderCheck reminders;
+    /** How long Snooze puts a reminder off. */
+    static final java.time.Duration SNOOZE = java.time.Duration.ofMinutes(5);
     /** The last save; the next one starts when it is done, so an older state never overwrites a newer one. */
     private CompletableFuture<Void> saving = CompletableFuture.completedFuture(null);
 
@@ -487,7 +489,13 @@ public final class MainPresenter implements ViewActions {
             switch (due.reminder().type()) {
                 case BEEP -> view.beep();
                 case FLASH -> view.flash();
-                case POPUP -> view.popup(tr("reminder.popup.title"), when + "\n" + a.what());
+                case POPUP -> {
+                    String more = a.what().strip().equals(a.summary()) ? ""
+                            : "\n" + a.what().strip().substring(a.what().strip().indexOf('\n') + 1).strip();
+                    view.remind(a.summary(), when + more,
+                            () -> reminders.snooze(due, clock.get(), SNOOZE),
+                            () -> showView(CalendarView.DAY, due.occurrence().date()));
+                }
                 case MAIL -> mail(due.reminder().mailTo(), tr("mail.reminder.subject", a.summary()), a);
             }
             view.setStatus(tr("status.reminder", a.summary()));

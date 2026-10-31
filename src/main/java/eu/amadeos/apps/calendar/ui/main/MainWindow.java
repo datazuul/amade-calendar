@@ -22,6 +22,8 @@ import eu.amadeos.apps.calendar.ui.views.ViewContext;
 import eu.amadeos.apps.calendar.ui.views.WeekView;
 import eu.amadeos.apps.calendar.ui.views.YearView;
 import eu.amadeos.commons.contacts.ContactDirectory;
+import eu.amadeos.commons.desktop.Notification;
+import eu.amadeos.commons.desktop.Notifications;
 import eu.amadeos.commons.i18n.LocaleSettings;
 import eu.amadeos.commons.swing.AmadeUI;
 import eu.amadeos.commons.swing.EdtExecutor;
@@ -340,6 +342,24 @@ public final class MainWindow extends JFrame implements MainView {
         dialog.setVisible(true);
         beep();
     }
+
+    // --8<-- [start:remind]
+    @Override
+    public void remind(String summary, String body, Runnable snooze, Runnable open) {
+        long id = Notifications.send(Notification.of(summary)
+                .body(Notification.escape(body))
+                .icon(getIconImage())
+                .category("x-amade.reminder")
+                .action("snooze", tr("reminder.snooze"), () -> SwingUtilities.invokeLater(snooze))
+                .defaultAction(() -> SwingUtilities.invokeLater(() -> {
+                    open.run();
+                    if (getState() == Frame.ICONIFIED) setState(Frame.NORMAL);
+                    toFront();
+                })));
+        // Without a notification service and without a system tray, the reminder still has to show.
+        if (id == 0 && !SystemTray.isSupported()) popup(tr("reminder.popup.title"), summary + "\n" + body);
+    }
+    // --8<-- [end:remind]
 
     @Override
     public void dispose() {

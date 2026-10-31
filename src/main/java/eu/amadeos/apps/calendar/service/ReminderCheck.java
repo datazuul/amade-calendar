@@ -4,6 +4,7 @@ import eu.amadeos.apps.calendar.domain.Occurrence;
 import eu.amadeos.apps.calendar.domain.Reminder;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -11,7 +12,8 @@ import java.util.Set;
 
 /**
  * Finds the reminders that became due since the last check. Each reminder of each occurrence fires
- * once; reminders that were due before the program started are not caught up on, as in dtcm.
+ * once; reminders that were due before the program started are not caught up on, as in dtcm. A reminder
+ * can be snoozed: it comes again after the given time.
  */
 public final class ReminderCheck {
     /** A reminder that is due now. */
@@ -21,6 +23,10 @@ public final class ReminderCheck {
     private final CalendarService calendar;
     private LocalDateTime lastCheck;
     private final Set<String> fired = new HashSet<>();
+    private final List<Snoozed> snoozed = new ArrayList<>();
+
+    private record Snoozed(Due due, LocalDateTime at) {
+    }
 
     public ReminderCheck(CalendarService calendar, LocalDateTime start) {
         this.calendar = calendar;
@@ -44,7 +50,19 @@ public final class ReminderCheck {
             }
         }
         lastCheck = now;
+        for (var it = snoozed.iterator(); it.hasNext(); ) {
+            Snoozed s = it.next();
+            if (!s.at().isAfter(now)) {
+                due.add(s.due());
+                it.remove();
+            }
+        }
         due.sort((a, b) -> a.occurrence().start().compareTo(b.occurrence().start()));
         return due;
+    }
+
+    /** Shows the reminder again at {@code now + delay}, at the first check after that. */
+    public void snooze(Due due, LocalDateTime now, Duration delay) {
+        snoozed.add(new Snoozed(due, now.plus(delay)));
     }
 }

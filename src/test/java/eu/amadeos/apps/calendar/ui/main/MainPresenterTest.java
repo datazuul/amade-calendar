@@ -19,6 +19,7 @@ import eu.amadeos.apps.calendar.service.print.ReportType;
 import eu.amadeos.commons.contacts.ContactDirectory;
 import eu.amadeos.commons.desktop.DesktopLauncher;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -236,7 +237,7 @@ class MainPresenterTest {
     void remindersReachTheWindow() throws IOException {
         start();
         presenter.checkReminders();
-        verify(view, never()).popup(anyString(), anyString());
+        verify(view, never()).remind(anyString(), anyString(), any(), any());
         MainPresenter later = new MainPresenter(view, calendar, repository, preferences, new DirectExecutorService(),
                 Locale.US, desktop, contacts, printer, new java.util.function.Supplier<>() {
                     int calls;
@@ -248,7 +249,31 @@ class MainPresenterTest {
                 });
         later.start();
         later.checkReminders();
-        verify(view).popup("Calendar - Reminder", "10/13/2026 9:00 AM - 10:00 AM\nProject meeting");
+        ArgumentCaptor<Runnable> snooze = ArgumentCaptor.forClass(Runnable.class);
+        ArgumentCaptor<Runnable> open = ArgumentCaptor.forClass(Runnable.class);
+        verify(view).remind(eq("Project meeting"), eq("10/13/2026 9:00 AM - 10:00 AM"), snooze.capture(), open.capture());
+        open.getValue().run();
+        verify(view).showView(CalendarView.DAY, NOW.toLocalDate());
+    }
+
+    @Test
+    void aSnoozedReminderComesAgainFiveMinutesLater() throws IOException {
+        start();
+        LocalDateTime[] now = {NOW};
+        MainPresenter later = new MainPresenter(view, calendar, repository, preferences, new DirectExecutorService(),
+                Locale.US, desktop, contacts, printer, () -> now[0]);
+        later.start();
+        now[0] = NOW.plusMinutes(1);
+        later.checkReminders();
+        ArgumentCaptor<Runnable> snooze = ArgumentCaptor.forClass(Runnable.class);
+        verify(view).remind(anyString(), anyString(), snooze.capture(), any());
+        snooze.getValue().run();
+        now[0] = NOW.plusMinutes(5);
+        later.checkReminders();
+        verify(view, times(1)).remind(anyString(), anyString(), any(), any());
+        now[0] = NOW.plusMinutes(6);
+        later.checkReminders();
+        verify(view, times(2)).remind(anyString(), anyString(), any(), any());
     }
 
     @Test
